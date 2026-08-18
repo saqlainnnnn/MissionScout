@@ -8,6 +8,7 @@ from backend.app.models.base import Base
 from backend.app.models.outbox_event import OutboxEvent  # noqa: F401
 from backend.app.models.intelligence_event import IntelligenceEvent  # noqa: F401
 from backend.app.models.source import Source  # noqa: F401
+from backend.app.models.operator import OperatorModel  # noqa: F401
 
 config = context.config
 
