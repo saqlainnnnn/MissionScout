@@ -48,3 +48,23 @@ def test_operator_exposes_normalized_name() -> None:
 def test_operator_rejects_non_string_name() -> None:
     with pytest.raises(TypeError, match="name"):
         Operator(name=None)
+
+
+def test_operators_with_same_normalized_name_are_equal() -> None:
+    first = Operator(name="Example Space Systems")
+    second = Operator(name=" example space systems ")
+
+    assert first == second
+
+
+def test_operators_with_different_normalized_names_are_not_equal() -> None:
+    first = Operator(name="Example Space Systems")
+    second = Operator(name="Another Space Systems")
+
+    assert first != second
+
+
+def test_operator_can_be_compared_with_non_operator() -> None:
+    operator = Operator(name="Example Space Systems")
+
+    assert operator != "Example Space Systems"

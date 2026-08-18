@@ -19,3 +19,9 @@ class Operator:
         self.name = normalized_name
         self.normalized_name = normalized_name.lower()
         self.country = country
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Operator):
+            return NotImplemented
+
+        return self.normalized_name == other.normalized_name
