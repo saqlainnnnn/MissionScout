@@ -68,3 +68,47 @@ def test_operator_can_be_compared_with_non_operator() -> None:
     operator = Operator(name="Example Space Systems")
 
     assert operator != "Example Space Systems"
+
+
+def test_operator_starts_with_no_satellites() -> None:
+    operator = Operator(name="Example Space Systems")
+
+    assert operator.satellites == []
+
+
+def test_operator_can_add_satellite() -> None:
+    from backend.app.domain.satellite import Satellite
+
+    operator = Operator(name="Example Space Systems")
+    satellite = Satellite(
+        name="IS-901",
+        orbit_type="GEO",
+        status="operational",
+    )
+
+    operator.add_satellite(satellite)
+
+    assert operator.satellites == [satellite]
+
+
+def test_operator_rejects_duplicate_satellite() -> None:
+    from backend.app.domain.satellite import Satellite
+
+    operator = Operator(name="Example Space Systems")
+    satellite = Satellite(
+        name="IS-901",
+        orbit_type="GEO",
+        status="operational",
+    )
+
+    operator.add_satellite(satellite)
+    operator.add_satellite(satellite)
+
+    assert operator.satellites == [satellite]
+
+
+def test_operator_rejects_non_satellite() -> None:
+    operator = Operator(name="Example Space Systems")
+
+    with pytest.raises(TypeError, match="satellite"):
+        operator.add_satellite("IS-901")
