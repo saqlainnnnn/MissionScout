@@ -1,11 +1,10 @@
 import asyncio
 import logging
 
+from backend.app.core.redis import get_redis
 from backend.app.db.session import AsyncSessionLocal
-from backend.app.integrations.publisher import (
-    get_integration_hub_publisher,
-)
 from backend.app.repositories.outbox import OutboxRepository
+from backend.app.services.queue import IntelligenceEventQueue
 
 logger = logging.getLogger(__name__)
 
@@ -14,40 +13,47 @@ BATCH_SIZE = 25
 
 
 async def process_outbox() -> int:
-    async with AsyncSessionLocal() as session:
-        repository = OutboxRepository(session)
-        publisher = get_integration_hub_publisher()
+    redis = get_redis()
+    queue = IntelligenceEventQueue(redis)
 
-        events = await repository.get_pending(limit=BATCH_SIZE)
+    try:
+        async with AsyncSessionLocal() as session:
+            repository = OutboxRepository(session)
+            events = await repository.get_pending(limit=BATCH_SIZE)
 
-        processed = 0
+            processed = 0
 
-        for event in events:
-            try:
-                await publisher.publish(event.payload)
+            for event in events:
+                try:
+                    await queue.enqueue(
+                        event_id=event.payload["event_id"],
+                    )
 
-                await repository.mark_processed(event)
-                processed += 1
+                    await repository.mark_processed(event)
+                    processed += 1
 
-                logger.info(
-                    "Published outbox event %s",
-                    event.id,
-                )
+                    logger.info(
+                        "Published outbox event %s to intelligence queue",
+                        event.id,
+                    )
 
-            except Exception as exc:
-                logger.exception(
-                    "Failed to publish outbox event %s",
-                    event.id,
-                )
+                except Exception as exc:
+                    logger.exception(
+                        "Failed to publish outbox event %s",
+                        event.id,
+                    )
 
-                await repository.mark_failed(
-                    event,
-                    error=str(exc),
-                )
+                    await repository.mark_failed(
+                        event,
+                        error=str(exc),
+                    )
 
-        await session.commit()
+            await session.commit()
 
-        return processed
+            return processed
+
+    finally:
+        await redis.aclose()
 
 
 async def worker_loop() -> None:
